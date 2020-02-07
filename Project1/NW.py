@@ -35,17 +35,20 @@ def printMatrix(grid):
     ax = sns.heatmap(np.array(grid))
 
 
-seq1 = "EEEEEKKKKK"
-seq2 = "EEEEE"
+#seq1 = "EEEEEKKKKK"
+#seq2 = "EEEEE"
 
-seq1 = "ABCDEFK"
-seq2 = "ABCDEKK"
+#seq1 = "ABCDEFK"
+#seq2 = "ABCDEKK"
 
-seq1 = "AAAAAFFF"
-seq2 = "BBBBBFFF"
+#seq1 = "AAAAAFFF"
+#seq2 = "BBBBBFFF"
 
-seq1 = "GTACAXGCAA"
-seq2 = "GTACCAXGCAA"
+#seq1 = "GTACAXGCAAVVVVVVVVVAAAAAAA"
+#seq2 = "GTACCAXGCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" # THIS BREAKS
+
+seq1 = "ARN"
+seq2 = "ARN"
 
 #   seq 1
 # s
@@ -61,13 +64,18 @@ def getBestScore(i, j):
     if j > 0 and i > 0:
         row = i - 1
         col = j - 1
+        assert(row >=0 and col >= 0)
         c = weightsDict[alphabetize(seq1[col-1], seq2[row-1])]
         print("diag", seq1[col-1], seq2[row-1])
+        if i == 1 and j == 1:
+            print("YEHAW", seq1[col-1], seq2[row-1])
+            print(c, grid[row][col])
         d_score = grid[row][col] + c
     # Get left neighbor
     if j > 0:
         row = i
         col = j - 1
+        assert(row >=0 and col >= 0)
         # Gapping seq1
         c = weightsDict[alphabetize('*', seq2[row-1])]
         print("left", seq2[row-1])
@@ -76,11 +84,15 @@ def getBestScore(i, j):
     if i > 0:
         row = i - 1
         col = j
+        assert(row >=0 and col >= 0)
         # Gapping seq2
         c = weightsDict[alphabetize(seq1[col-1], '*')]
         print("up", seq1[col-1])
         u_score = grid[row][col] + c
     print("")
+    if i == 1 and j == 1:
+        print("SHOULD BE 4:", d_score, l_score, u_score)
+        print(seq1[col-1], seq2[row-1])
     return max(d_score, l_score, u_score)
 
 
@@ -112,7 +124,7 @@ def maxSmithWaterman():
                 maxScore = i, j, bestScore 
     return maxScore
 
-maxScore = maxSmithWaterman()
+maxScore = maxNeedlemanWunsch()
 
 printMatrix(grid)
 print(maxScore[2])
@@ -122,25 +134,32 @@ backtrackSteps = []
 def backtrack(i, j):
     if i == 0 and j == 0:
         return
+    d_neighbor = float('-inf')
+    l_neighbor = float('-inf')
+    u_neighbor = float('-inf')
     # Get diag neighbor
     if j > 0 and i > 0:
         row = i - 1
         col = j - 1
+        assert(row >= 0 and col >= 0)
         d_neighbor = grid[row][col]
     # Get left neighbor
     if j > 0:
         row = i
         col = j - 1
+        assert(row >= 0 and col >= 0)
         l_neighbor = grid[row][col]
     # Get up neighbor
     if i > 0:
         row = i - 1
         col = j
+        assert(row >= 0 and col >= 0)
         u_neighbor = grid[row][col]
     # As long as it's the largest, push onto the stack
     # Invariant: max backwards always converges
+    print(i, j, backtrackSteps)
     bestNeighbor = max(d_neighbor, l_neighbor, u_neighbor)
-    print(bestNeighbor)
+    print("BDLU", bestNeighbor, d_neighbor, l_neighbor, u_neighbor)
     if bestNeighbor == d_neighbor:
         backtrackSteps.append('D')
         backtrack(i - 1, j - 1)
@@ -153,8 +172,8 @@ def backtrack(i, j):
         backtrackSteps.append('2')
         backtrack(i - 1, j)
 
-#backtrack(maxScore[0], maxScore[1])
-backtrack(len(seq2), len(seq1))
+backtrack(maxScore[0], maxScore[1])
+#backtrack(len(seq2), len(seq1))
 print("BTSTEPS", backtrackSteps)
 steps = backtrackSteps[::-1]
 print("STEPS", steps)
@@ -210,3 +229,9 @@ print(seq1List, midList, seq2List)
 print(''.join(seq1List))
 print(''.join(midList))
 print(''.join(seq2List))
+with open("alignment.txt", "w") as oh:
+    oh.write(''.join(seq1List))
+    oh.write('\n')
+    oh.write(''.join(midList))
+    oh.write('\n')
+    oh.write(''.join(seq2List))
