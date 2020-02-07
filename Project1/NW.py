@@ -34,16 +34,18 @@ def printMatrix(grid):
       for row in grid]))
     ax = sns.heatmap(np.array(grid))
 
+
+seq1 = "EEEEEKKKKK"
+seq2 = "EEEEE"
+
+seq1 = "ABCDEFK"
+seq2 = "ABCDEKK"
+
+seq1 = "AAAAAFFF"
+seq2 = "BBBBBFFF"
+
 seq1 = "GTACAXGCAA"
-seq2 = "GTACCAXGCA"
-
-seq1 = "EENKKMM"
-seq2 = "EEWKKMM"
-#seq1 = "EEEEEKKKKK"
-#seq2 = "EEEEE"
-
-#seq1 = "AAAAAFFF"
-#seq2 = "BBBBBFFF"
+seq2 = "GTACCAXGCAA"
 
 #   seq 1
 # s
@@ -60,6 +62,7 @@ def getBestScore(i, j):
         row = i - 1
         col = j - 1
         c = weightsDict[alphabetize(seq1[col-1], seq2[row-1])]
+        print("diag", seq1[col-1], seq2[row-1])
         d_score = grid[row][col] + c
     # Get left neighbor
     if j > 0:
@@ -67,16 +70,17 @@ def getBestScore(i, j):
         col = j - 1
         # Gapping seq1
         c = weightsDict[alphabetize('*', seq2[row-1])]
+        print("left", seq2[row-1])
         l_score = grid[row][col] + c
     # Get up neighbor
     if i > 0:
         row = i - 1
         col = j
-        print("Row, Col, l1, l2", row, col, len(seq1), len(seq2))
-        print(seq1, seq2)
         # Gapping seq2
         c = weightsDict[alphabetize(seq1[col-1], '*')]
+        print("up", seq1[col-1])
         u_score = grid[row][col] + c
+    print("")
     return max(d_score, l_score, u_score)
 
 
@@ -149,8 +153,8 @@ def backtrack(i, j):
         backtrackSteps.append('2')
         backtrack(i - 1, j)
 
-backtrack(maxScore[0], maxScore[1])
-# backtrack(len(seq2), len(seq1))
+#backtrack(maxScore[0], maxScore[1])
+backtrack(len(seq2), len(seq1))
 print("BTSTEPS", backtrackSteps)
 steps = backtrackSteps[::-1]
 print("STEPS", steps)
@@ -180,13 +184,13 @@ for s in steps:
             midList.append('*')
         seq2List.append(n)
     elif s == '1': # THIS USED TO SAY 1
-        seq1List.append('-')
-        midList.append(' ')
-        seq2List.append(next(seq2Generator))
-    elif s == '2':
         seq1List.append(next(seq1Generator))
         midList.append(' ')
         seq2List.append('-')
+    elif s == '2':
+        seq1List.append('-')
+        midList.append(' ')
+        seq2List.append(next(seq2Generator))
 # The max has been reached
 try:
     while True:
