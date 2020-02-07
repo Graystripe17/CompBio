@@ -34,30 +34,25 @@ def printMatrix(grid):
       for row in grid]))
     ax = sns.heatmap(np.array(grid))
 
-seq1 = "GCATGCAAAAA"
-seq2 = "GATTACAX"
+seq1 = "GTACAXGCAA"
+seq2 = "GTACCAXGCA"
 
-seq1 = "EEEEEKKKKK"
-seq2 = "EEEEE"
+seq1 = "EENKKMM"
+seq2 = "EEWKKMM"
+#seq1 = "EEEEEKKKKK"
+#seq2 = "EEEEE"
 
 #seq1 = "AAAAAFFF"
 #seq2 = "BBBBBFFF"
-# Build empty grid
-grid = [[0 for i in range(len(seq1) + 1)] for j in range(len(seq2) + 1)]
-# Populate grid with gaps
-try:
-    for x in range(len(seq1) + 1):
-        grid[0][x] = -4 * x
-    for x in range(len(seq2) + 1):
-        grid[x][0] = -4 * x
-except:
-    assert(False)
 
 #   seq 1
 # s
 # e
 # q
 # 2
+
+# Build empty grid
+grid = [[0 for i in range(len(seq1) + 1)] for j in range(len(seq2) + 1)]
 
 def getBestScore(i, j):
     # Get diag neighbor
@@ -84,14 +79,36 @@ def getBestScore(i, j):
         u_score = grid[row][col] + c
     return max(d_score, l_score, u_score)
 
-maxScore = 0, 0, 0
 
-for i in range(1, len(seq2) + 1):
-    for j in range(1, len(seq1) + 1):
-        bestScore = getBestScore(i, j)
-        grid[i][j] = bestScore 
-        if bestScore > maxScore[2]:
-            maxScore = i, j, bestScore 
+def maxNeedlemanWunsch():
+    # Populate grid with gaps
+    try:
+        for x in range(1, len(seq1) + 1):
+            grid[0][x] = x * weightsDict[alphabetize(seq1[x - 1], '*')]
+        for x in range(1, len(seq2) + 1):
+            grid[x][0] = x * weightsDict[alphabetize(seq2[x - 1], '*')]
+    except:
+        assert(False)
+    maxScore = 0, 0, 0
+    for i in range(1, len(seq2) + 1):
+        for j in range(1, len(seq1) + 1):
+            bestScore = getBestScore(i, j)
+            grid[i][j] = bestScore 
+            if bestScore > maxScore[2]:
+                maxScore = i, j, bestScore 
+    return maxScore
+
+def maxSmithWaterman():
+    maxScore = 0, 0, 0
+    for i in range(1, len(seq2) + 1):
+        for j in range(1, len(seq1) + 1):
+            bestScore = max(0, getBestScore(i, j))
+            grid[i][j] = bestScore 
+            if bestScore > maxScore[2]:
+                maxScore = i, j, bestScore 
+    return maxScore
+
+maxScore = maxSmithWaterman()
 
 printMatrix(grid)
 print(maxScore[2])
@@ -119,6 +136,7 @@ def backtrack(i, j):
     # As long as it's the largest, push onto the stack
     # Invariant: max backwards always converges
     bestNeighbor = max(d_neighbor, l_neighbor, u_neighbor)
+    print(bestNeighbor)
     if bestNeighbor == d_neighbor:
         backtrackSteps.append('D')
         backtrack(i - 1, j - 1)
@@ -153,14 +171,15 @@ seq2List = []
 for s in steps:
     if s == 'D':
         f = next(seq1Generator)
-        s = next(seq2Generator)
+        n = next(seq2Generator)
+        print(f, n)
         seq1List.append(f)
-        if f == s:
+        if f == n:
             midList.append('|')
         else:
             midList.append('*')
-        seq2List.append(s)
-    elif s == '1':
+        seq2List.append(n)
+    elif s == '1': # THIS USED TO SAY 1
         seq1List.append('-')
         midList.append(' ')
         seq2List.append(next(seq2Generator))
