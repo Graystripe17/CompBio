@@ -171,6 +171,8 @@ if __name__ == "__main__":
     elif algo == 'S':
         maxScore = maxSmithWaterman()
 
+    print("Score: ", maxScore[2])
+
     backtrackSteps = []
     backtrack(maxScore[0], maxScore[1])
     steps = backtrackSteps[::-1]
@@ -179,7 +181,7 @@ if __name__ == "__main__":
     seq2Generator = seqGenerator(seq2)
 
     # Uncomment to debug matrix
-    printMatrix(grid)
+    # printMatrix(grid)
 
     # Printing line 1
     seq1List = []
