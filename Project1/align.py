@@ -135,10 +135,10 @@ def wordWrapGenerator(seq):
 
 def printWrapped(seq1, midList, seq2, n=80):
     i = n
-    while i < len(midList):
+    while i - 80 < len(midList):
         print(seq1[i-n:i])
         print(midList[i-n:i])
-        print(seq2[i-n:i], end="\n\n\n")
+        print(seq2[i-n:i], end="\n\n")
         i += n
 
 if __name__ == "__main__":
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     seq2Generator = seqGenerator(seq2)
 
     # Uncomment to debug matrix
-    # printMatrix(grid)
+    printMatrix(grid)
 
     # Printing line 1
     seq1List = []
