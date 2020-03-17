@@ -29,7 +29,6 @@ def processFeatures(matrix):
     return processedMatrix
 
 def avg(x):
-    #print("mean", x)
     return sum(x) / len(x)
 
 def stddev(X):
@@ -50,8 +49,6 @@ def populateModel(posterior, targetFeatures, allFeatures):
 
 def train(records):
     model = {}
-    #print(records)
-    #print(len(records))
     allFeatures = [record[1] for record in records]
     for posterior in {'H', 'E', 'C'}:
         targetFeatures = [record[0] for record in records if record[1] == posterior]
@@ -67,16 +64,13 @@ def classify(record, model):
         for i in range(100):
             featureProduct *= gaussian(features[i], M[i], S[i])
         results[posterior] = featureProduct * P
-    print("RESULTS", results)
     winner = max(results, key=results.get)
     return winner
 
 
 def test(records, model):
     correct, incorrect = 0, 0
-    print(model)
     for record in records:
-        print("RECORD", record)
         actual = record[1]
         predict = classify(record, model)
         print(actual, predict)
