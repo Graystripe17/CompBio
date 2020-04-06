@@ -9,28 +9,28 @@ def extract200Features(matrix, i1, i2):
     features = []
     pi1 = i1 + 2 # RR INDICES START AT 1
     pi2 = i2 + 2
-    print(i1, i2)
-    print(pi1, pi2, len(matrix))
     for m in matrix[pi1-2:pi1+3]:
-        print("M", m)
         features += m
-    print("moving to pi2")
     for m in matrix[pi2-2:pi2+3]:
-        print("M", m)
         features += m
-    print(features, len(features))
     assert len(features) == 200
     return features
 
 def sigmoid(x):
+    if x > 100:
+        return 1
+    if x < -100:
+        return 0
     return 1 / (1 + math.exp(-x))
 
 def cost(Y, pred):
-    cost = (Y * math.log(pred) + (1 - Y) * (math.log(1 - pred)))
+    p = float(pred)
+    assert p <= 1 and p >= 0
+    cost = -1 * (Y * math.log(float(p)) + (1 - Y) * (math.log(1 - float(p))))
     return cost
 
 def gradient(X, Y, cost):
-    dw = X * (cost - Y)
+    dw = scalarMul(cost - Y, X)
     db = cost - Y
     return dw, db
 
@@ -50,22 +50,29 @@ def addLists(a, b):
 def subtractLists(a, b):
     return [i - j for i, j in zip(a, b)]
 
+def dotProduct(a, b):
+    return [i * j for i, j in zip(a, b)]
+
 if __name__ == '__main__':
     path = './'
+    predictions = []
     for filename in os.listdir(os.path.join(path, "rr")):
-        train_data = []
-        test_data = []
+        if filename in {".", "..", ""}:
+            continue
         stem, _, rr = filename.partition('.')
         rrPath = os.path.join(path, "rr", stem + ".rr")
         pssmPath = os.path.join(path, "pssm", stem + '.pssm')
         allContacts = []
-        with open(rrPath, 'r+') as oh:
-            seq = oh.readline()
-            contacts = oh.readline().strip()
-            while contacts:
-                i, j, d1, d2, d = contacts.split()[:5]
-                allContacts.append((int(i) - 1, int(j) - 1)) # RR index start 0
+        try:
+            with open(rrPath, 'r+') as oh:
+                seq = oh.readline()
                 contacts = oh.readline().strip()
+                while contacts:
+                    i, j, d1, d2, d = contacts.split()[:5]
+                    allContacts.append((int(i) - 1, int(j) - 1)) # RR index start 0
+                    contacts = oh.readline().strip()
+        except:
+            continue
         with open(pssmPath, 'r+') as oh:
             _ = oh.readline() # blank line
             _ = oh.readline() # instruction
@@ -82,7 +89,7 @@ if __name__ == '__main__':
                 residueNumber += 1
                 pssm = oh.readline().strip()
             MATRIX = padMatrix(rawMatrix)
-        contactFeatures = [(extract200Features(MATRIX, *contact), 'C') for contact in allContacts]
+        contactFeatures = [(extract200Features(MATRIX, *contact), 'C', contact) for contact in allContacts]
         # Generate case Y = 0
         noncontactFeatures = []
         while len(noncontactFeatures) < len(contactFeatures):
@@ -93,37 +100,53 @@ if __name__ == '__main__':
             while abs(a - b) < 5 or (a, b) in contactFeatures:
                 b = random.randint(0, L - 2) # Reselect until farther away
             noncontact = (min(a, b), max(a, b))
-            noncontactFeatures.append((extract200Features(MATRIX, *noncontact), 'N'))
-        print("apples2oranges", contactFeatures[0], noncontactFeatures[0])
+            noncontactFeatures.append((extract200Features(MATRIX, *noncontact), 'N', noncontact))
+        train_data = []
+        test_data = []
         for c in contactFeatures + noncontactFeatures:
             ri = random.randint(0, 3)
             if ri == 0:
-                test_data += c
+                test_data.append(c)
             else:
-                train_data += c
+                train_data.append(c)
         learning_rate = 0.01
+        eta = 0.25
         w, b = initializeWeights()
-        print(len(train_data), train_data[0])
-        for case in train_data:
-            # Update weights
+        iteration = 0
+        while True:
+            case = train_data[random.randint(0, len(train_data) - 1)]
             X = case[0]
-            print("X", X)
             assert len(X) == 200
             if case[1] == 'C':
                 Y = 1
             elif case[1] == 'N':
                 Y = 0
-            pred = map(sigmoid, [i * j for i, j in zip(X, w)])
-            dw, db = gradient(X, Y, cost(Y, pred))
-            w = subtractLists(w, scalarMul(learning_rate, w))
-            b = subtractLists(b, scalarMul(learning_rate, b))
-            print("W B", w, b)
+            pred = (1 / 200) * (sum(list(map(sigmoid, [i * j for i, j in zip(X, w)]))) + sigmoid(b))
+            error = cost(Y, pred)
+            dw, db = gradient(X, Y, error)
+            w = subtractLists(w, scalarMul(learning_rate, dw))
+            b = b - learning_rate * db
+            iteration += 1
+            if iteration % 10000 == 0 or error < eta:
+                print("Iteration: ", iteration)
+                print("W b", w[:5], b)
+                print("pred", pred)
+                print("error", error)
+                print("dw, db", sum(dw) / len(dw), db)
+            if error < eta:
+                break
+        # Done with SGD
+        resultsDict = {}
         for case in test_data:
             X = case[0]
             if case[1] == 'C':
                 Y = 1
             elif case[1] == 'N':
                 Y = 0
-            pred = map(sigmoid, [i * j for i, j in zip(X, w)])
-            print(pred)
-
+            i, j = case[2]
+            pred = (1 / 200) * (sum(list(map(sigmoid, [s * t for s, t in zip(X, w)]))) + sigmoid(b))
+            print(pred, Y)
+            predictions.append((abs(Y - pred), j - i, L))
+    print("Top L / 10: ", [x[0] for x in sorted(predictions)[::-1] if x[1] == x[2] // 10])
+    print("Top L / 5: ", [x[0] for x in sorted(predictions)[::-1] if x[1] == x[2] // 5])
+    print("Top L / 2: ", [x[0] for x in sorted(predictions)[::-1] if x[1] == x[2] // 2])
