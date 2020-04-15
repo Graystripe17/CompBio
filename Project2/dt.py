@@ -101,7 +101,8 @@ def shannon(left, right):
     return -1 * (p * math.log2(p) + (1 - p) * math.log2(1 - p))
     
 def info_gain(left, right, current_uncertainty):
-    return current_uncertainty - shannon(left, right)
+    print(current_uncertainty, shannon(left, right), current_uncertainty-shannon(left, right))
+    return shannon(left, right)
 
 def partition(records, question):
     true_records, false_records = [], []
