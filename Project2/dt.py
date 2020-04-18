@@ -1,6 +1,7 @@
 import os
 import math
 import random
+import pickle
 
 path = './'
     
@@ -135,6 +136,10 @@ def classify(record, node):
     else:
         return classify(record, node.false_branch)
 
+def writePickle(ebDict, filename):
+    with open(filename, 'wb') as handle:
+        pickle.dump(ebDict, handle)
+
 if __name__ == '__main__':
     train = []
     test = []
@@ -184,3 +189,25 @@ if __name__ == '__main__':
     print_tree(tree)
     for key, val in residues.items():
         print(key, ": ", classify(key, tree))
+    input("Train/test complete. Press any key to pickle")
+    ebDict = {}
+    for filename in os.listdir(os.path.join(path, "fasta")):
+        stem, _, fasta = filename.partition('.')
+        aminoPath = os.path.join(path, "fasta", stem + '.fasta')
+        print(filename, stem)
+        with open(aminoPath, 'r+') as oh:
+            stem = oh.readline()[1:]
+            amino = oh.readline().strip()
+            print(amino)
+        percentageDict = {'E': 0, 'B': 0}
+        for key in amino:
+            pred = classify(key, tree)
+            percentageDict[pred] += 1
+        stem = stem.strip()
+        total = percentageDict['E'] + percentageDict['B']
+        percentageDict['E'] = percentageDict['E'] / total
+        percentageDict['B'] = percentageDict['B'] / total
+        ebDict[stem] = percentageDict 
+        print(percentageDict)
+    print(ebDict)
+    writePickle(ebDict, "eb.pickle")
