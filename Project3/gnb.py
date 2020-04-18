@@ -1,6 +1,7 @@
 import os
 import math
 import random
+import pickle
 
 def padMatrix(matrix):
     return [([-1] * 20, '*')] * 2 + matrix + [([-1] * 20, '*')] * 2
@@ -64,22 +65,85 @@ def classify(record, model):
         for i in range(100):
             featureProduct *= gaussian(features[i], M[i], S[i])
         results[posterior] = featureProduct * P
+    return results
+
+def selectWinner(record, model):
+    results = classify(record, model)
     winner = max(results, key=results.get)
     return winner
-
+    
 
 def test(records, model):
     correct, incorrect = 0, 0
     for record in records:
         actual = record[1]
-        predict = classify(record, model)
+        predict = selectWinner(record, model)
         print(actual, predict)
         if actual == predict:
             correct += 1
         else:
             incorrect += 1
-    print(correct / (correct + incorrect))
+    #print(correct / (correct + incorrect))
+    print(predict)
 
+def getMatrix(ss, pssmPath):
+    with open(pssmPath, 'r+') as oh:
+        _ = oh.readline() # blank line
+        _ = oh.readline() # instruction
+        labels = oh.readline().split()[:20]
+        rawMatrix = []
+        pssm = oh.readline().strip()
+        residueNumber = 0
+        while pssm:
+            pssm = pssm.split()
+            residue = pssm[2]
+            Y = ss[residueNumber]
+            feature = [int(x) for x in pssm[3:23]]
+            rawMatrix.append((feature, Y))
+            residueNumber += 1
+            pssm = oh.readline().strip()
+        MATRIX = padMatrix(rawMatrix)
+    return MATRIX
+    
+def getRecordsByProtein(stem):
+    fastaPath = os.path.join(path, "fasta", stem + ".fasta")
+    ssPath = os.path.join(path, "ss", stem + ".ss")
+    pssmPath = os.path.join(path, "pssm", stem + '.pssm')
+    with open(fastaPath, 'r+') as oh:
+        stem = oh.readline()[1:]
+        fasta = oh.readline().strip()
+    with open(ssPath, 'r+') as oh:
+        stem = oh.readline()[1:]
+        ss = oh.readline().strip()
+    assert(len(fasta) == len(ss))
+    MATRIX = getMatrix(ss, pssmPath)
+    records = processFeatures(MATRIX)
+    return records
+
+def trainModel():
+    train_data = []
+    test_data = []
+    path = './'
+    for filename in os.listdir(os.path.join(path, "fasta")):
+        stem, _, fasta = filename.partition('.')
+        records = getRecordsByProtein(stem)
+        ri = random.randint(0, 3)
+        if ri == 0:
+            test_data += records
+        else:
+            train_data += records
+    model = train(train_data)
+    print("Training complete")
+    return model
+
+def getHEC(stem):
+    records = getRecordsByProtein(stem)
+    model = trainModel()
+    return classify(records, model)
+
+def writePickle(hecDict, filename):
+    with open(filename, 'wb') as oh:
+        pickle.dump(hecDict, oh)
 
 if __name__ == '__main__':
     train_data = []
@@ -87,34 +151,7 @@ if __name__ == '__main__':
     path = './'
     for filename in os.listdir(os.path.join(path, "fasta")):
         stem, _, fasta = filename.partition('.')
-        fastaPath = os.path.join(path, "fasta", stem + ".fasta")
-        ssPath = os.path.join(path, "ss", stem + ".ss")
-        pssmPath = os.path.join(path, "pssm", stem + '.pssm')
-        with open(fastaPath, 'r+') as oh:
-            stem = oh.readline()[1:]
-            fasta = oh.readline().strip()
-        with open(ssPath, 'r+') as oh:
-            stem = oh.readline()[1:]
-            ss = oh.readline().strip()
-        assert(len(fasta) == len(ss))
-        with open(pssmPath, 'r+') as oh:
-            _ = oh.readline() # blank line
-            _ = oh.readline() # instruction
-            labels = oh.readline().split()[:20]
-            rawMatrix = []
-            pssm = oh.readline().strip()
-            residueNumber = 0
-            while pssm:
-                pssm = pssm.split()
-                residue = pssm[2]
-                Y = ss[residueNumber]
-                feature = [int(x) for x in pssm[3:23]]
-                rawMatrix.append((feature, Y))
-                residueNumber += 1
-                pssm = oh.readline().strip()
-            MATRIX = padMatrix(rawMatrix)
-        records = processFeatures(MATRIX)
-        
+        records = getRecordsByProtein(stem)
         ri = random.randint(0, 3)
         if ri == 0:
             test_data += records
@@ -122,3 +159,21 @@ if __name__ == '__main__':
             train_data += records
     model = train(train_data)
     test(test_data, model)
+    input("Part 1 complete")
+    hecDict = {}
+    for filename in os.listdir(os.path.join(path, "fasta")):
+        stem, _, fasta = filename.partition('.')
+        hecCount = {'H': 0, 'E': 0, 'C': 0}
+        records = getRecordsByProtein(stem)
+        for record in records:
+            winner = selectWinner(record, model)
+            hecCount[winner] += 1
+        hecTotal = hecCount['H'] + hecCount['E'] + hecCount['C']
+        hecH = hecCount['H'] / hecTotal
+        hecE = hecCount['E'] / hecTotal
+        hecC = hecCount['C'] / hecTotal
+        hecDict[stem] = hecH, hecE, hecC
+    pickleName = "HEC.pickle"
+    writePickle(hecDict, pickleName)
+    print(hecDict)
+    print("Pickle written to", pickleName)
