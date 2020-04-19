@@ -17,3 +17,8 @@ Given evolutionary profile (pssm), use GNB to predict if protein is part of seco
 Use logistic regression to predict protein residue-residue contacts.
 
 `python3 lr.py`
+
+## Project 5: Protein Structural Similarity Prediction with Linear Regression
+Use linear regression with SGD to predict TM-scores based on pssm, eb, and hec.
+
+`python3 p5.py`

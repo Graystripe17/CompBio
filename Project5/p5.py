@@ -83,7 +83,7 @@ if __name__ == '__main__':
     B = [0 for _ in range(50)]
     B_0 = random.random()
     alpha = 0.001
-    epsilon = 0.01
+    epsilon = 0.000001
     iterations = 0
     while True:
         TM, p1, p2, features = random.choice(train)
@@ -98,9 +98,18 @@ if __name__ == '__main__':
         if squared_error < epsilon:
             break
         iterations += 1
-        if iterations % 10000 == 0:
+        if iterations % 1000 == 0:
             print("FEATURES", features)
             print("B", B, B_0)
             print("pred", pred)
-
+    input("Train complete. Press any key to test")
+    results = []
+    for t in test:
+        TM, p1, p2, features = random.choice(test)
+        pred = predict(B, B_0, features)
+        print("TM", TM, "pred", pred)
+        squared_error = (TM - pred) ** 2
+        results.append(squared_error)
+    print("AVG SQ ERROR", sum(results) / len(results))
+        
 
